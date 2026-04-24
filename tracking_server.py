@@ -5,24 +5,38 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-DB_PATH = "project atm/campaign.db"
+DB_PATH = "campaign.db"
 
 @app.route("/open")
 def track_open():
     email = request.args.get("email")
 
-    if email:
+    try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
         cursor.execute("""
-            UPDATE contacts
-            SET opened = 1, opened_at = ?
-            WHERE email = ?
-        """, (datetime.now(), email))
+            CREATE TABLE IF NOT EXISTS contacts (
+                email TEXT PRIMARY KEY,
+                opened INTEGER DEFAULT 0,
+                opened_at TEXT
+            )
+        """)
+
+        if email:
+            cursor.execute("""
+                INSERT INTO contacts (email, opened, opened_at)
+                VALUES (?, 1, datetime('now'))
+                ON CONFLICT(email) DO UPDATE SET
+                opened=1,
+                opened_at=datetime('now')
+            """, (email,))
 
         conn.commit()
         conn.close()
+
+    except Exception as e:
+        print("ERROR:", e)
 
     return "OK"
 
