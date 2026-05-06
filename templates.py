@@ -2,9 +2,9 @@ from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from bs4.builder import HTML_5
+from bs4 import BeautifulSoup
 
-TRACKING_DOMAIN = "http://127.0.0.1:5000"
+TRACKING_DOMAIN = "https://email-marketing-with-tracking.onrender.com"
 LOGO_PATH = "project atm/Assets/Viewtrip_Logo.jpeg"
 
 
@@ -28,13 +28,19 @@ def build_email(html_content, email):
 
     tracking_pixel = f'<img src="{TRACKING_DOMAIN}/open?email={email}" width="1" height="1" style="display:none;">'
 
-    # safer injection
-    html_content = html_content.replace("</body>", tracking_pixel + "</body>")
+    # inject tracking pixel
+    if "</body>" in html_content:
+        html_content = html_content.replace("</body>", tracking_pixel + "</body>")
+    else:
+        html_content += tracking_pixel
 
     msg = MIMEMultipart("related")
-    msg.attach(MIMEText(html_content, "html"))
 
-    # attach logo once
+    # IMPORTANT: attach HTML properly
+    html_part = MIMEText(html_content, "html")
+    msg.attach(html_part)
+
+    # attach logo
     try:
         with open(LOGO_PATH, "rb") as img_file:
             mime_img = MIMEImage(img_file.read())
@@ -42,7 +48,7 @@ def build_email(html_content, email):
             mime_img.add_header("Content-Disposition", "inline", filename="logo.jpg")
             msg.attach(mime_img)
     except FileNotFoundError:
-        print("⚠️ Logo not found, sending without logo")
+        print("⚠️ Logo not found")
 
     return msg
 

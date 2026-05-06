@@ -1,7 +1,9 @@
-from flask import Flask, request, send_file
+from flask import Flask, request, send_file, jsonify
 import sqlite3
 import os
+from flask import redirect
 from datetime import datetime
+
 
 app = Flask(__name__)
 
@@ -43,6 +45,62 @@ def track_open():
 @app.route("/")
 def home():
     return "Tracking server is running"
+
+@app.route("/click")
+def track_click():
+    email = request.args.get("email")
+    url = request.args.get("url")
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            ALTER TABLE contacts ADD COLUMN clicked INTEGER DEFAULT 0
+        """)
+    except:
+        pass
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            UPDATE contacts
+            SET clicked = 1
+            WHERE email = ?
+        """, (email,))
+
+        conn.commit()
+        conn.close()
+
+    except Exception as e:
+        print("ERROR:", e)
+
+    return redirect(url)
+
+@app.route("/stats")
+def get_stats():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT COUNT(*) FROM contacts")
+        total = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM contacts WHERE opened=1")
+        opened = cursor.fetchone()[0]
+
+        conn.close()
+
+        return jsonify({
+            "total": total,
+            "opened": opened
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

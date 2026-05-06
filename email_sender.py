@@ -3,29 +3,25 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 def send_email(sender_email, app_password, to_email, subject, html):
-
     try:
-        # 1. Create email container
         msg = MIMEMultipart()
-
-        # 2. Set headers
         msg["From"] = sender_email
         msg["To"] = to_email
         msg["Subject"] = subject
-
-        # 3. Attach HTML correctly (IMPORTANT)
         msg.attach(MIMEText(html, "html"))
 
-        # 4. Connect to Gmail SMTP
-        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=15)
-        server.starttls()
-        server.login(sender_email, app_password)
+        server = smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=60)
+         
+        # server.set_debuglevel(1)  # 👈 VERY IMPORTANT
 
-        # 5. SEND (IMPORTANT FIX)
+        print("➡️ Connecting...")
+        server.login(sender_email, app_password)
+        print("✅ Logged in")
+
         server.sendmail(sender_email, to_email, msg.as_string())
+        print("✅ Email sent")
 
         server.quit()
-
         return True
 
     except Exception as e:
