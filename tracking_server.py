@@ -9,6 +9,21 @@ app = Flask(__name__)
 
 DB_PATH = "campaign.db"
 
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS contacts (
+            email TEXT PRIMARY KEY,
+            opened INTEGER DEFAULT 0,
+            opened_at TEXT
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+
 @app.route("/open")
 def track_open():
     email = request.args.get("email")
@@ -84,6 +99,15 @@ def get_stats():
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
+
+        # ensure table exists
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS contacts (
+                email TEXT PRIMARY KEY,
+                opened INTEGER DEFAULT 0,
+                opened_at TEXT
+            )
+        """)
 
         cursor.execute("SELECT COUNT(*) FROM contacts")
         total = cursor.fetchone()[0]
