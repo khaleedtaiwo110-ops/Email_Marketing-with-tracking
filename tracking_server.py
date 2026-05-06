@@ -26,6 +26,7 @@ def init_db():
 
 @app.route("/open")
 def track_open():
+    print("DB PATH:", DB_PATH)
     email = request.args.get("email")
 
     try:
@@ -56,6 +57,7 @@ def track_open():
         print("ERROR:", e)
 
     return "OK"
+
 
 @app.route("/")
 def home():
@@ -96,6 +98,7 @@ def track_click():
 
 @app.route("/stats")
 def get_stats():
+    print("DB PATH:", DB_PATH)
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
@@ -124,6 +127,7 @@ def get_stats():
 
     except Exception as e:
         return jsonify({"error": str(e)})
+
 
 
 if __name__ == "__main__":

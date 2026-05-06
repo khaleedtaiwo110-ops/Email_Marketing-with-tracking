@@ -2,6 +2,7 @@ import threading
 import tkinter as tk
 from tkinter import messagebox
 import os
+import requests
 
 from campaign import run_campaign
 from db import init_db, get_connection
@@ -159,39 +160,21 @@ def auto_check_replies():
 
 # ---------------- ANALYTICS ---------------- #
 def show_stats():
-    conn = get_connection()
-    cursor = conn.cursor()
+    try:
+        res = requests.get("https://email-marketing-with-tracking.onrender.com/stats")
+        data = res.json()
 
-    cursor.execute("SELECT COUNT(*) FROM contacts")
-    total = cursor.fetchone()[0]
+        total = data.get("total", 0)
+        opened = data.get("opened", 0)
 
-    cursor.execute("SELECT COUNT(*) FROM contacts WHERE status='sent'")
-    sent = cursor.fetchone()[0]
+        messagebox.showinfo(
+            "Campaign Stats",
+            f"Total Sent: {total}\nOpened: {opened}"
+        )
 
-    cursor.execute("SELECT COUNT(*) FROM contacts WHERE status='failed'")
-    failed = cursor.fetchone()[0]
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
 
-    cursor.execute("SELECT COUNT(*) FROM contacts WHERE replied=1")
-    replied = cursor.fetchone()[0]
-
-    cursor.execute("SELECT COUNT(*) FROM contacts WHERE opened=1")
-    opened = cursor.fetchone()[0]
-
-    conn.close()
-
-    # Avoid division by zero
-    open_rate = (opened / sent * 100) if sent else 0
-    reply_rate = (replied / sent * 100) if sent else 0
-
-    messagebox.showinfo(
-        "Stats",
-        f"""Total: {total}
-Sent: {sent}
-Failed: {failed}
-
-Opened: {opened} ({open_rate:.1f}%)
-Replied: {replied} ({reply_rate:.1f}%)"""
-    )
 
 # ---------------- GUI ---------------- #
 root = tk.Tk()
