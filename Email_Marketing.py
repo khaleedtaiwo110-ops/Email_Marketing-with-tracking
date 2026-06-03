@@ -159,36 +159,68 @@ def auto_check_replies():
     root.after(15000, auto_check_replies)
 
 # ---------------- ANALYTICS ---------------- #
-# ---------------- SHOW STATS (THREADED TO PREVENT FREEZING) ---------------- #
+# ---------------- REAL TIME LOCAL STATS SYNCHRONIZER ---------------- #
 def show_stats():
     def fetch_stats_worker():
         try:
-            # Change window title temporarily to give user visual loading feedback
-            root.title("📊 Loading stats from Render server...")
+            root.title("📊 Synchronizing metrics with server...")
 
-            # Request metric endpoint with an explicit network timeout window
-            response = requests.get("https://email-marketing-with-tracking.onrender.com/stats", timeout=60)
+            # Fetch the list of unique opened emails from Render
+            response = requests.get("https://email-marketing-with-tracking.onrender.com/stats", timeout=30)
 
             if response.status_code == 200:
-                data = response.json()
-                total = data.get("total", 0)
-                opened = data.get("opened", 0)
+                cloud_data = response.json()
+                opened_list = cloud_data.get("opened_emails", [])
+                # Normalize emails to lowercase
+                opened_set = {email.lower().strip() for email in opened_list}
 
-                # Render the dialog safe alert back to user screen
-                messagebox.showinfo("Campaign Stats", f"Total Records in Cloud: {total}\nOpened Emails: {opened}")
+                # Connect to your local actual DB to sync and calculate accurate metrics
+                conn = get_connection()
+                cursor = conn.cursor()
+
+                # 1. Update your local database if an email was tracked in the cloud
+                for email in opened_set:
+                    cursor.execute("UPDATE contacts SET opened = 1 WHERE LOWER(email) = ?", (email,))
+                conn.commit()
+
+                # 2. Query total sent numbers from your local baseline
+                cursor.execute("SELECT COUNT(*) FROM contacts WHERE status != 'pending'")
+                total_sent = cursor.fetchone()[0]
+
+                cursor.execute("SELECT COUNT(*) FROM contacts WHERE opened = 1")
+                total_opened = cursor.fetchone()[0]
+
+                conn.close()
+
+                # Refresh local UI memory and application list view
+                load_contacts()
+                root.after(0, update_contact_list_view)
+
+                # Present accurate, calibrated local math
+                messagebox.showinfo(
+                    "Real Campaign Metrics",
+                    f"Total Emails Sent: {total_sent}\n"
+                    f"Verified Unique Opens: {total_opened}\n"
+                    f"Estimated Open Rate: {((total_opened / total_sent) * 100) if total_sent > 0 else 0:.1f}%"
+                )
             else:
-                messagebox.showerror("Server Error", f"Server returned status code: {response.status_code}")
+                messagebox.showerror("Sync Error", f"Server dropped response code: {response.status_code}")
 
-        except requests.exceptions.Timeout:
-            messagebox.showerror("Timeout Error",
-                                 "The tracking server took too long to reply.\nIt is likely waking up from sleep. Try clicking again in a few seconds.")
         except Exception as e:
-            messagebox.showerror("Network Error", f"Could not sync with tracking server:\n{e}")
+            messagebox.showerror("Network Sync Failure", f"Could not sync data pipeline:\n{e}")
         finally:
-            root.title("Email Marketing System")  # Restore standard window header frame
+            root.title("Email Marketing System")
 
-    # Spin up background daemon thread to offload execution from the main GUI thread
     threading.Thread(target=fetch_stats_worker, daemon=True).start()
+
+
+def update_contact_list_view():
+    """Helper utility to make sure the Tkinter listbox shows modified open checkmarks instantly."""
+    contact_list.delete(0, tk.END)
+    for c in contacts:
+        status_text = c.get('status', 'pending').upper()
+        contact_list.insert(tk.END, f"{c['company']} | {c['email']} | {status_text}")
+
 
 # ---------------- GUI ---------------- #
 root = tk.Tk()
