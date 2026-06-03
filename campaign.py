@@ -5,28 +5,26 @@ from db import get_connection
 from email_sender import send_email
 from templates import generate_email_html, build_email
 
-
 def run_campaign(contacts, update_ui, sender_email, password, company=None):
     print("🚀 Campaign started")
 
     try:
-        for c in contacts:
-            c["status"] = "pending"
+        # DO NOT reset statuses to pending here!
+        # Removing that loop preserves existing statuses ('sent', 'failed', etc.)
 
         for index, c in enumerate(contacts):
+            # 🚀 CRITICAL FIX: Skip anyone who is NOT pending!
+            if c.get("status") != "pending":
+                print(f"⏭️ Skipping {c['email']} - Already processed (Status: {c['status']})")
+                continue
+
             print("➡️ Processing:", c)
 
             subject = f"Travel Support for {c['company']}"
-
-            # ✅ FIX 1: use correct email
             html = generate_email_html(c["company"], c["email"])
-
-            # ✅ FIX 2: build full message (with tracking pixel)
             msg = build_email(html, c["email"])
 
-            # ✅ FIX 3: send full MIME message
             sent = send_email(sender_email, password, c["email"], subject, msg)
-
             print("Email sent result:", sent)
 
             # ---------------- DB UPDATE ---------------- #
