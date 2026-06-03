@@ -40,15 +40,15 @@ def build_email(html_content, email):
     html_part = MIMEText(html_content, "html")
     msg.attach(html_part)
 
-    # attach logo
+    # Inline Logo Image Configuration
     try:
-        with open(LOGO_PATH, "rb") as img_file:
-            mime_img = MIMEImage(img_file.read())
-            mime_img.add_header("Content-ID", "<logo>")
-            mime_img.add_header("Content-Disposition", "inline", filename="logo.jpg")
-            msg.attach(mime_img)
+        with open(LOGO_PATH, "rb") as f:
+            img = MIMEImage(f.read())
+            img.add_header("Content-ID", "<logo>")
+            img.add_header("Content-Disposition", "inline", filename="Viewtrip_Logo.jpeg")
+            msg.attach(img)
     except FileNotFoundError:
-        print("⚠️ Logo not found")
+        print(f"⚠️ Image asset not found at '{LOGO_PATH}'. Sending without embedded header image.")
 
     return msg
 
@@ -58,22 +58,17 @@ def generate_email_html(company, email):
 
     html = f"""
     <html>
-    <body style="font-family: Arial; line-height: 1.6; color: #333;">
+    <body style="font-family: Arial; color: #333;">
 
-        <p>Dear <strong>{company}</strong> team,</p>
+        <p>Hello <strong>{company}</strong>,</p>
 
-        <p>My name is Khaleed Taiwo, and I represent <b>Viewtrip Travels</b>.</p>
+        <p>I hope this email finds you well.</p>
 
-        <p>We specialize in managing end-to-end travel logistics for corporate entities.</p>
+        <p>We provide standard corporate travel support designed to optimize travel management flows.</p>
 
-        <ul>
-            <li>Strategic Itinerary Planning</li>
-            <li>Visa Support</li>
-            <li>24/7 Emergency Assistance</li>
-            <li>Hotel & Transport</li>
-        </ul>
+        <p>We handle everything from flights, secure logistics, and emergency changes seamlessly.</p>
 
-        <p>Would love to explore how we can support {company}.</p>
+        <p>Would you be open to a brief 5-minute exploratory sync sometime this week?</p>
 
         {footer()}
 
@@ -139,6 +134,7 @@ def generate_followup2_html(company, email):
 # ---------------- FINAL FOLLOW UP ---------------- #
 def generate_followup3_html(company, email):
 
+    # FIXED: Removed the stray out-of-context 'ngrok version' string line
     html = f"""
     <html>
     <body style="font-family: Arial; color: #333;">
@@ -146,10 +142,8 @@ def generate_followup3_html(company, email):
         <p>Hi <strong>{company}</strong>,</p>
 
         <p>I haven’t heard back, so I’ll assume now isn’t the right time.</p>
-ngrok version
-        <p>I’ll pause outreach for now, but feel free to reconnect anytime.</p>
 
-        <p>Wishing you continued success.</p>
+        <p>I’ll pause outreach for now, but feel free to reconnect anytime.</p>
 
         {footer()}
 

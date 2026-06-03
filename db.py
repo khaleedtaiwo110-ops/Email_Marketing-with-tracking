@@ -10,6 +10,7 @@ def init_db():
     conn = get_connection()
     cursor = conn.cursor()
 
+    # UPDATED: Explicitly adding columns for tracking email responses properly
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS contacts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,11 +21,12 @@ def init_db():
         sent_at TEXT,
         opened INTEGER DEFAULT 0,
         clicked INTEGER DEFAULT 0,
+        replied INTEGER DEFAULT 0,
+        replied_at TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
     """)
 
     conn.commit()
     conn.close()
-
     # israel.aye@oneworq.com

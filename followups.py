@@ -4,11 +4,14 @@ import random
 
 from db import get_connection
 from email_sender import send_email
+# Added build_email here to wrap the html with tracking pixel and generate MIME objects
 from templates import (
     generate_followup_html,
     generate_followup2_html,
-    generate_followup3_html
+    generate_followup3_html,
+    build_email
 )
+
 
 # NOTE: avoid importing root/contact_list directly if possible
 # we pass UI callbacks instead (safer)
@@ -16,7 +19,6 @@ from templates import (
 
 # ---------------- FOLLOW UP 1 ---------------- #
 def run_followups(contacts, update_ui, sender_email, password, progress_label=None):
-
     for index, c in enumerate(contacts):
 
         if c.get("status") != "sent":
@@ -29,7 +31,12 @@ def run_followups(contacts, update_ui, sender_email, password, progress_label=No
             progress_label.config(text=f"Sending follow-up 1 to {company}")
 
         subject = f"Following up - {company}"
-        msg = generate_followup_html(company, email)
+
+        # 1. Generate raw HTML text
+        html_content = generate_followup_html(company, email)
+
+        # 2. FIXED: Build full MIME structure (injects tracking pixel & fixes formatting)
+        msg = build_email(html_content, email)
 
         sent = send_email(sender_email, password, email, subject, msg)
 
@@ -55,7 +62,6 @@ def run_followups(contacts, update_ui, sender_email, password, progress_label=No
 
 # ---------------- FOLLOW UP 2 ---------------- #
 def run_followup2(contacts, update_ui, sender_email, password, progress_label=None):
-
     for index, c in enumerate(contacts):
 
         if c.get("status") != "followup":
@@ -67,8 +73,13 @@ def run_followup2(contacts, update_ui, sender_email, password, progress_label=No
         if progress_label:
             progress_label.config(text=f"Sending follow-up 2 to {company}")
 
-        subject = f"Quick Check-In - {company}"
-        msg = generate_followup2_html(company, email)
+        subject = f"Quick check - {company}"
+
+        # 1. Generate raw HTML text
+        html_content = generate_followup2_html(company, email)
+
+        # 2. FIXED: Build full MIME structure (injects tracking pixel & fixes formatting)
+        msg = build_email(html_content, email)
 
         sent = send_email(sender_email, password, email, subject, msg)
 
@@ -94,7 +105,6 @@ def run_followup2(contacts, update_ui, sender_email, password, progress_label=No
 
 # ---------------- FOLLOW UP 3 ---------------- #
 def run_followup3(contacts, update_ui, sender_email, password, progress_label=None):
-
     for index, c in enumerate(contacts):
 
         if c.get("status") != "followup2":
@@ -107,7 +117,12 @@ def run_followup3(contacts, update_ui, sender_email, password, progress_label=No
             progress_label.config(text=f"Final follow-up to {company}")
 
         subject = f"Final follow-up - {company}"
-        msg = generate_followup3_html(company, email)
+
+        # 1. Generate raw HTML text
+        html_content = generate_followup3_html(company, email)
+
+        # 2. FIXED: Build full MIME structure (injects tracking pixel & fixes formatting)
+        msg = build_email(html_content, email)
 
         sent = send_email(sender_email, password, email, subject, msg)
 
