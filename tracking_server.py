@@ -28,6 +28,14 @@ def init_db():
 def track_open():
     print("DB PATH:", DB_PATH)
     email = request.args.get("email")
+    user_agent = request.headers.get("User-Agent", "").lower()
+
+    # 🚀 FIXED: Skip bots, crawlers, and automated email image proxies
+    bot_keywords = ["googleimageproxy", "yahoo! slurp", "bingpreview", "bot", "spider", "crawler", "yahooimageproxy"]
+    if any(keyword in user_agent for keyword in bot_keywords):
+        print(f"🤖 Blocked automated pre-fetch open from User-Agent: {user_agent}")
+        # Return the tiny transparent pixel image anyway so the email loader doesn't look broken
+        return send_file("pixel.png", mimetype="image/png") if os.path.exists("pixel.png") else ("", 204)
 
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -56,7 +64,8 @@ def track_open():
     except Exception as e:
         print("ERROR:", e)
 
-    return "OK"
+    # Fallback response if pixel.png doesn't exist locally on the cloud container
+    return send_file("pixel.png", mimetype="image/png") if os.path.exists("pixel.png") else ("", 204)
 
 
 @app.route("/")

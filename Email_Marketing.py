@@ -159,22 +159,36 @@ def auto_check_replies():
     root.after(15000, auto_check_replies)
 
 # ---------------- ANALYTICS ---------------- #
+# ---------------- SHOW STATS (THREADED TO PREVENT FREEZING) ---------------- #
 def show_stats():
-    try:
-        res = requests.get("https://email-marketing-with-tracking.onrender.com/stats")
-        data = res.json()
+    def fetch_stats_worker():
+        try:
+            # Change window title temporarily to give user visual loading feedback
+            root.title("📊 Loading stats from Render server...")
 
-        total = data.get("total", 0)
-        opened = data.get("opened", 0)
+            # Request metric endpoint with an explicit network timeout window
+            response = requests.get("https://email-marketing-with-tracking.onrender.com/stats", timeout=60)
 
-        messagebox.showinfo(
-            "Campaign Stats",
-            f"Total Sent: {total}\nOpened: {opened}"
-        )
+            if response.status_code == 200:
+                data = response.json()
+                total = data.get("total", 0)
+                opened = data.get("opened", 0)
 
-    except Exception as e:
-        messagebox.showerror("Error", str(e))
+                # Render the dialog safe alert back to user screen
+                messagebox.showinfo("Campaign Stats", f"Total Records in Cloud: {total}\nOpened Emails: {opened}")
+            else:
+                messagebox.showerror("Server Error", f"Server returned status code: {response.status_code}")
 
+        except requests.exceptions.Timeout:
+            messagebox.showerror("Timeout Error",
+                                 "The tracking server took too long to reply.\nIt is likely waking up from sleep. Try clicking again in a few seconds.")
+        except Exception as e:
+            messagebox.showerror("Network Error", f"Could not sync with tracking server:\n{e}")
+        finally:
+            root.title("Email Marketing System")  # Restore standard window header frame
+
+    # Spin up background daemon thread to offload execution from the main GUI thread
+    threading.Thread(target=fetch_stats_worker, daemon=True).start()
 
 # ---------------- GUI ---------------- #
 root = tk.Tk()
