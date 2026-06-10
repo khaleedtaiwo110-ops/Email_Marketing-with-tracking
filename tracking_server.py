@@ -63,6 +63,7 @@ def track_open():
 def get_stats():
     try:
         conn = sqlite3.connect(DB_PATH)
+        
         cursor = conn.cursor()
         cursor.execute("SELECT email, opened_at FROM opens ORDER BY opened_at DESC")
         rows = cursor.fetchall()
