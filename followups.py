@@ -4,7 +4,6 @@ import random
 
 from db import get_connection
 from email_sender import send_email
-# Added build_email here to wrap the html with tracking pixel and generate MIME objects
 from templates import (
     generate_followup_html,
     generate_followup2_html,
@@ -13,134 +12,130 @@ from templates import (
 )
 
 
-# NOTE: avoid importing root/contact_list directly if possible
-# we pass UI callbacks instead (safer)
-
-
 # ---------------- FOLLOW UP 1 ---------------- #
-def run_followups(contacts, update_ui, sender_email, password, progress_label=None):
-    for index, c in enumerate(contacts):
+def run_followups(contacts, update_ui, sender_email, password, status_callback=None):
+    print("🚀 Follow Up 1 Campaign Started")
+    if status_callback: status_callback("🚀 Sequence 1 activated. Filtering opened warm leads...")
 
-        if c.get("status") != "sent":
-            continue
+    try:
+        processed_count = 0
+        for index, c in enumerate(contacts):
+            if c.get("status") != "sent" or c.get("opened") != 1:
+                continue
 
-        company = c["company"]
-        email = c["email"]
+            processed_count += 1
+            company = c["company"]
+            email = c["email"]
 
-        if progress_label:
-            progress_label.config(text=f"Sending follow-up 1 to {company}")
+            if status_callback: status_callback(f"📨 Delivering Follow Up 1 to {company}")
 
-        subject = f"Following up - {company}"
+            subject = f"Following up - {company}"
+            html = generate_followup_html(company, email)
+            msg = build_email(html, email)
 
-        # 1. Generate raw HTML text
-        html_content = generate_followup_html(company, email)
+            sent = send_email(sender_email, password, email, subject, msg)
 
-        # 2. FIXED: Build full MIME structure (injects tracking pixel & fixes formatting)
-        msg = build_email(html_content, email)
+            conn = get_connection()
+            cursor = conn.cursor()
 
-        sent = send_email(sender_email, password, email, subject, msg)
+            if sent:
+                status = "followup"
+                cursor.execute("UPDATE contacts SET status=? WHERE email=?", (status, email))
+                contacts[index]["status"] = status
+                update_ui(index, c, status)
 
-        conn = get_connection()
-        cursor = conn.cursor()
+            conn.commit()
+            conn.close()
+            time.sleep(random.randint(5, 10))
 
-        if sent:
-            status = "followup"
+        if status_callback:
+            status_callback(f"✅ Sequence 1 finished. Processed {processed_count} warm entries.")
 
-            cursor.execute(
-                "UPDATE contacts SET status=? WHERE email=?",
-                (status, email)
-            )
-
-            contacts[index]["status"] = status
-            update_ui(index, c, status)
-
-        conn.commit()
-        conn.close()
-
-        time.sleep(random.randint(5, 10))
+    except Exception as e:
+        if status_callback: status_callback(f"❌ Follow Up 1 Failed: {str(e)}")
 
 
 # ---------------- FOLLOW UP 2 ---------------- #
-def run_followup2(contacts, update_ui, sender_email, password, progress_label=None):
-    for index, c in enumerate(contacts):
+def run_followup2(contacts, update_ui, sender_email, password, status_callback=None):
+    print("🚀 Follow Up 2 Campaign Started")
+    if status_callback: status_callback("🚀 Sequence 2 activated. Checking active pipeline steps...")
 
-        if c.get("status") != "followup":
-            continue
+    try:
+        processed_count = 0
+        for index, c in enumerate(contacts):
+            if c.get("status") != "followup" or c.get("opened") != 1:
+                continue
 
-        company = c["company"]
-        email = c["email"]
+            processed_count += 1
+            company = c["company"]
+            email = c["email"]
 
-        if progress_label:
-            progress_label.config(text=f"Sending follow-up 2 to {company}")
+            if status_callback: status_callback(f"📨 Delivering Follow Up 2 to {company}")
 
-        subject = f"Quick check - {company}"
+            subject = f"Quick check-in - {company}"
+            html = generate_followup2_html(company, email)
+            msg = build_email(html, email)
 
-        # 1. Generate raw HTML text
-        html_content = generate_followup2_html(company, email)
+            sent = send_email(sender_email, password, email, subject, msg)
 
-        # 2. FIXED: Build full MIME structure (injects tracking pixel & fixes formatting)
-        msg = build_email(html_content, email)
+            conn = get_connection()
+            cursor = conn.cursor()
 
-        sent = send_email(sender_email, password, email, subject, msg)
+            if sent:
+                status = "followup2"
+                cursor.execute("UPDATE contacts SET status=? WHERE email=?", (status, email))
+                contacts[index]["status"] = status
+                update_ui(index, c, status)
 
-        conn = get_connection()
-        cursor = conn.cursor()
+            conn.commit()
+            conn.close()
+            time.sleep(random.randint(5, 10))
 
-        if sent:
-            status = "followup2"
+        if status_callback:
+            status_callback(f"✅ Sequence 2 finished. Processed {processed_count} active entries.")
 
-            cursor.execute(
-                "UPDATE contacts SET status=? WHERE email=?",
-                (status, email)
-            )
-
-            contacts[index]["status"] = status
-            update_ui(index, c, status)
-
-        conn.commit()
-        conn.close()
-
-        time.sleep(random.randint(5, 10))
+    except Exception as e:
+        if status_callback: status_callback(f"❌ Follow Up 2 Failed: {str(e)}")
 
 
 # ---------------- FOLLOW UP 3 ---------------- #
-def run_followup3(contacts, update_ui, sender_email, password, progress_label=None):
-    for index, c in enumerate(contacts):
+def run_followup3(contacts, update_ui, sender_email, password, status_callback=None):
+    print("🚀 Final Follow Up Campaign Started")
+    if status_callback: status_callback("🚀 Final Sequence activated. Processing late-stage pipeline...")
 
-        if c.get("status") != "followup2":
-            continue
+    try:
+        processed_count = 0
+        for index, c in enumerate(contacts):
+            if c.get("status") != "followup2" or c.get("opened") != 1:
+                continue
 
-        company = c["company"]
-        email = c["email"]
+            processed_count += 1
+            company = c["company"]
+            email = c["email"]
 
-        if progress_label:
-            progress_label.config(text=f"Final follow-up to {company}")
+            if status_callback: status_callback(f"📨 Delivering Final Drop to {company}")
 
-        subject = f"Final follow-up - {company}"
+            subject = f"Final follow-up - {company}"
+            html = generate_followup3_html(company, email)
+            msg = build_email(html, email)
 
-        # 1. Generate raw HTML text
-        html_content = generate_followup3_html(company, email)
+            sent = send_email(sender_email, password, email, subject, msg)
 
-        # 2. FIXED: Build full MIME structure (injects tracking pixel & fixes formatting)
-        msg = build_email(html_content, email)
+            conn = get_connection()
+            cursor = conn.cursor()
 
-        sent = send_email(sender_email, password, email, subject, msg)
+            if sent:
+                status = "completed"
+                cursor.execute("UPDATE contacts SET status=? WHERE email=?", (status, email))
+                contacts[index]["status"] = status
+                update_ui(index, c, status)
 
-        conn = get_connection()
-        cursor = conn.cursor()
+            conn.commit()
+            conn.close()
+            time.sleep(random.randint(5, 10))
 
-        if sent:
-            status = "completed"
+        if status_callback:
+            status_callback(f"✅ Final Sequences completed. Processed {processed_count} pipeline completions.")
 
-            cursor.execute(
-                "UPDATE contacts SET status=? WHERE email=?",
-                (status, email)
-            )
-
-            contacts[index]["status"] = status
-            update_ui(index, c, status)
-
-        conn.commit()
-        conn.close()
-
-        time.sleep(random.randint(5, 10))
+    except Exception as e:
+        if status_callback: status_callback(f"❌ Final Follow Up Failed: {str(e)}")
