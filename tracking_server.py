@@ -63,18 +63,24 @@ def track_open():
 def get_stats():
     try:
         conn = sqlite3.connect(DB_PATH)
-        
         cursor = conn.cursor()
+
+        # 🎯 THE FIX: Force the table to exist before reading from it
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS opens (
+                email TEXT PRIMARY KEY, 
+                opened_at TEXT
+            )
+        """)
+
         cursor.execute("SELECT email, opened_at FROM opens ORDER BY opened_at DESC")
         rows = cursor.fetchall()
         conn.close()
 
-        # Structure stats to return both the email address and when it happened
         stats_list = [{"email": row[0], "opened_at": row[1]} for row in rows]
         return jsonify({"opened_emails": stats_list, "total_unique_opens": len(stats_list)})
     except Exception as e:
         return jsonify({"opened_emails": [], "error": str(e)})
-
 
 if __name__ == "__main__":
     init_db()
