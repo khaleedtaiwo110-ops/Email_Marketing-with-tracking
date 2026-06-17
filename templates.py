@@ -37,8 +37,7 @@ def build_email(html_content, email, attachment_path=None):
     msg_related.attach(msg_alternative)
 
     # Inject the unique dynamic tracking image route safely at the bottom of the body text
-    tracking_pixel = f'<img src="{TRACKING_DOMAIN}?email={email}" width="1" height="1" style="display:none !important; visibility:hidden; opacity:0;">'
-
+    tracking_pixel = f'<img src="{TRACKING_DOMAIN}/{email}" width="1" height="1" style="display:none !important; visibility:hidden; opacity:0;">'
     if "</body>" in html_content:
         html_content = html_content.replace("</body>", tracking_pixel + "</body>")
     else:

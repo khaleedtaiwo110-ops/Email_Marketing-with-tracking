@@ -3,6 +3,8 @@ import sqlite3
 import os
 import base64
 
+import urllib.parse
+
 app = Flask(__name__)
 DB_PATH = "campaign.db"
 
@@ -20,29 +22,35 @@ def init_db():
     conn.commit()
     conn.close()
 
-
-@app.route("/open")
-def track_open():
-    email = request.args.get("email")
+@app.route("/open/<path:encoded_email>")
+def track_open(encoded_email):
     user_agent = request.headers.get("User-Agent", "").lower()
 
-    # Base64 string for an invisible, transparent 1x1 tracking GIF
+    # 1x1 Transparent tracking GIF pixel bytes
     blank_pixel_data = base64.b64decode(b'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7')
     pixel_headers = {'Content-Type': 'image/gif'}
 
-    # 🚀 Filter out automated bots, scanners, and web crawlers
+    # Block automated crawler bots
     bot_keywords = ["yahoo! slurp", "bingpreview", "bot", "spider", "crawler"]
     if any(keyword in user_agent for keyword in bot_keywords):
-        print(f"🤖 Blocked automated crawler bot: {user_agent}")
         return blank_pixel_data, 200, pixel_headers
 
-    if email:
-        cleaned_email = email.lower().strip()
+    if encoded_email:
         try:
+            # Safely decode the email from the path structure
+            decoded_email = urllib.parse.unquote(encoded_email)
+            cleaned_email = decoded_email.strip().lower()
+
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
 
-            # Safely log or update the exact open timestamp record
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS opens (
+                    email TEXT PRIMARY KEY,
+                    opened_at TEXT
+                )
+            """)
+
             cursor.execute("""
                 INSERT INTO opens (email, opened_at)
                 VALUES (?, datetime('now'))
@@ -51,11 +59,10 @@ def track_open():
 
             conn.commit()
             conn.close()
-            print(f"🔥 Successfully recorded & updated open for: {cleaned_email}")
+            print(f"👀 Live Tracked Open: {cleaned_email}")
         except Exception as e:
             print("Database Error:", e)
 
-    # 🎯 FIX: Return the transparent pixel cleanly out of memory—no missing function errors!
     return blank_pixel_data, 200, pixel_headers
 
 

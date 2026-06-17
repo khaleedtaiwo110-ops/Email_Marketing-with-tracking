@@ -203,46 +203,64 @@ def check_replies():
                      daemon=True).start()
 
 
+# Look inside Email_Marketing.py and replace your show_stats function:
+
 def show_stats(silent=False):
+    import requests
+
+    # 🎯 Match this URL explicitly to your live Render tracking engine!
+    SERVER_URL = "https://email-marketing-with-tracking.onrender.com/stats"
+
     try:
-        response = requests.get("https://email-marketing-with-tracking.onrender.com/stats", timeout=10)
-        if response.status_code == 200:
-            cloud_data = response.json()
-            opened_list = cloud_data.get("opened_emails", [])
-            opened_set = {email.lower().strip() for email in opened_list}
-
-            conn = get_connection()
-            cursor = conn.cursor()
-            try:
-                cursor.execute("ALTER TABLE contacts ADD COLUMN opened INTEGER DEFAULT 0")
-            except sqlite3.OperationalError:
-                pass
-
-            for email in opened_set:
-                cursor.execute("UPDATE contacts SET opened = 1 WHERE LOWER(email) = ?", (email,))
-            conn.commit()
-
-            cursor.execute("SELECT COUNT(*) FROM contacts WHERE status != 'pending'")
-            total_sent = cursor.fetchone()[0]
-            cursor.execute("SELECT COUNT(*) FROM contacts WHERE opened = 1")
-            total_opened = cursor.fetchone()[0]
-            conn.close()
-
-            load_contacts()
-            root.after(0, update_contact_list_view)
-
+        response = requests.get(SERVER_URL, timeout=10)
+        if response.status_code != 200:
             if not silent:
-                update_status_safe("📊 Metrics synced successfully from live tracker server.")
-                messagebox.showinfo("Pipeline Metrics Dashboard",
-                                    f"Total Emails Sent: {total_sent}\nUnique Real Opens: {total_opened}")
-            return True
-        else:
-            if not silent: update_status_safe(f"❌ Cloud server error code: {response.status_code}")
-            return False
-    except Exception as e:
-        if not silent: update_status_safe(f"❌ Network Sync Exception: {e}")
-        return False
+                messagebox.showerror("Sync Error", f"Server responded with status code: {response.status_code}")
+            return
 
+        data = response.json()
+        opened_emails = data.get("opened_emails", [])
+
+        # Pull out a clean list of unique emails that opened your messages
+        opened_addresses = {item["email"].lower().strip() for item in opened_emails}
+
+        # Write updates back to your local SQLite DB and UI window safely
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        with contacts_lock:
+            for index, contact in enumerate(contacts):
+                email_clean = contact["email"].lower().strip()
+
+                if email_clean in opened_addresses:
+                    # If local state is still pending or sent, upgrade it to 'opened'
+                    if contact["status"] in ["pending", "sent", "failed"]:
+                        contact["status"] = "opened"
+                        contact["opened"] = 1
+
+                        # Persist to local database file
+                        cursor.execute(
+                            "UPDATE contacts SET opened = 1, status = 'opened' WHERE email = ?",
+                            (contact["email"],)
+                        )
+
+                        # Safely visually update the Tkinter list box row
+                        contact_list.delete(index)
+                        contact_list.insert(
+                            index,
+                            f"{contact['company']} | {contact['email']} | OPENED 👀"
+                        )
+
+        conn.commit()
+        conn.close()
+
+        if not silent:
+            messagebox.showinfo("Sync Complete",
+                                f"Successfully checked server!\nFound {len(opened_addresses)} unique email opens.")
+
+    except Exception as e:
+        if not silent:
+            messagebox.showerror("Network Error", f"Could not connect to tracking server:\n{e}")
 
 # ---------------- TKINTER LAYOUT ENVIRONMENT ---------------- #
 root = tk.Tk()
