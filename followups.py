@@ -30,7 +30,7 @@ def run_followups(contacts, update_ui, sender_email, password, status_callback=N
             if status_callback: status_callback(f"📨 Delivering Follow Up 1 to {company}")
 
             subject = f"Following up - {company}"
-            html = generate_followup_html(company, email)
+            html = generate_followup_html(company, email, c.get("first_name"))
             msg = build_email(html, email)
 
             sent = send_email(sender_email, password, email, subject, msg)
@@ -73,7 +73,7 @@ def run_followup2(contacts, update_ui, sender_email, password, status_callback=N
             if status_callback: status_callback(f"📨 Delivering Follow Up 2 to {company}")
 
             subject = f"Quick check-in - {company}"
-            html = generate_followup2_html(company, email)
+            html = generate_followup2_html(company, email, c.get("first_name"))
             msg = build_email(html, email)
 
             sent = send_email(sender_email, password, email, subject, msg)
@@ -116,7 +116,7 @@ def run_followup3(contacts, update_ui, sender_email, password, status_callback=N
             if status_callback: status_callback(f"📨 Delivering Final Drop to {company}")
 
             subject = f"Final follow-up - {company}"
-            html = generate_followup3_html(company, email)
+            html = generate_followup3_html(company, email, c.get("first_name"))
             msg = build_email(html, email)
 
             sent = send_email(sender_email, password, email, subject, msg)

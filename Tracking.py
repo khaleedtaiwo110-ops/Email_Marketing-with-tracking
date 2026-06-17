@@ -114,12 +114,14 @@ def run_analysis():
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
-    threading.Thread(target=task).start()
+    threading.Thread(target=task, daemon=True).start()
 
 
 def clear_results():
     result_text.delete(1.0, tk.END)
     company_entry.delete(0, tk.END)
+
+
 
 
 # -------------------------------

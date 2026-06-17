@@ -32,10 +32,11 @@ init_db()
 
 
 # ---------------- DATA STORAGE LOGIC ---------------- #
+# Look inside Email_Marketing.py -> load_contacts()
 def load_contacts():
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT company, email, website, status, opened FROM contacts")
+    cursor.execute("SELECT company, email, website, first_name, status, opened FROM contacts")
     rows = cursor.fetchall()
 
     with contacts_lock:
@@ -45,14 +46,16 @@ def load_contacts():
                 "company": row[0],
                 "email": row[1],
                 "website": row[2],
-                "status": row[3],
-                "opened": row[4]
+                "first_name": row[3],
+                "status": row[4],
+                "opened": row[5]
             })
     conn.close()
 
 
 def add_company():
     company = company_entry.get().strip()
+    first_name = first_name_entry.get().strip()
     email = email_entry.get().strip()
     website = website_entry.get().strip()
 
@@ -64,12 +67,13 @@ def add_company():
     cursor = conn.cursor()
     try:
         cursor.execute(
-            "INSERT INTO contacts (company, email, website) VALUES (?, ?, ?)",
-            (company, email, website)
+            "INSERT INTO contacts (company, first_name, email, website) VALUES (?, ?, ?, ?)",
+            (company, first_name if first_name else None, email, website)
         )
         conn.commit()
 
         company_entry.delete(0, tk.END)
+        first_name_entry.delete(0, tk.END)
         email_entry.delete(0, tk.END)
         website_entry.delete(0, tk.END)
 
@@ -80,7 +84,6 @@ def add_company():
         messagebox.showerror("Duplicate Error", f"The email '{email}' already exists!")
     finally:
         conn.close()
-
 
 # 🎯 NEW FEATURE: DELETE SELECTED LEAD FUNCTION
 def delete_company(event=None):
@@ -258,26 +261,29 @@ form_frame = tk.LabelFrame(root, text=" PIPELINE LEAD MANAGEMENT ", font=font_ti
                            bd=2, relief="groove", padx=15, pady=15)
 form_frame.pack(fill="x", padx=20, pady=15)
 
-tk.Label(form_frame, text="Company Name:", font=font_label, bg=COLOR_CARD, fg=COLOR_TEXT).grid(row=0, column=0,
-                                                                                               sticky="w", pady=4)
-tk.Label(form_frame, text="Target Email:", font=font_label, bg=COLOR_CARD, fg=COLOR_TEXT).grid(row=1, column=0,
-                                                                                               sticky="w", pady=4)
-tk.Label(form_frame, text="Corporate Web URL:", font=font_label, bg=COLOR_CARD, fg=COLOR_TEXT).grid(row=2, column=0,
-                                                                                                    sticky="w", pady=4)
+# 1. Labels Layout
+tk.Label(form_frame, text="Company Name:", font=font_label, bg=COLOR_CARD, fg=COLOR_TEXT).grid(row=0, column=0, sticky="w", pady=4)
+# 🎯 ADD THIS LINE HERE:
+tk.Label(form_frame, text="First Name (Optional):", font=font_label, bg=COLOR_CARD, fg=COLOR_TEXT).grid(row=1, column=0, sticky="w", pady=4)
+tk.Label(form_frame, text="Target Email:", font=font_label, bg=COLOR_CARD, fg=COLOR_TEXT).grid(row=2, column=0, sticky="w", pady=4)
+tk.Label(form_frame, text="Corporate Web URL:", font=font_label, bg=COLOR_CARD, fg=COLOR_TEXT).grid(row=3, column=0, sticky="w", pady=4)
 
+# 2. Creating Entry Box Objects
 company_entry = tk.Entry(form_frame, font=font_entry, bd=1, relief="solid", width=36)
+first_name_entry = tk.Entry(form_frame, font=font_entry, bd=1, relief="solid", width=36)
 email_entry = tk.Entry(form_frame, font=font_entry, bd=1, relief="solid", width=36)
 website_entry = tk.Entry(form_frame, font=font_entry, bd=1, relief="solid", width=36)
 
+# 3. Entry Box Grid Grid Placements (row numbers shifted down by 1 below)
 company_entry.grid(row=0, column=1, padx=10, pady=4)
-email_entry.grid(row=1, column=1, padx=10, pady=4)
-website_entry.grid(row=2, column=1, padx=10, pady=4)
+first_name_entry.grid(row=1, column=1, padx=10, pady=4)
+email_entry.grid(row=2, column=1, padx=10, pady=4)
+website_entry.grid(row=3, column=1, padx=10, pady=4)
 
-# Side-by-side action button placement inside management frame
+# 4. Action Button Rowspan updated from 3 to 4 to stretch along with the fields
 add_btn = tk.Button(form_frame, text="➕ Add Lead", command=add_company, font=font_button, bg=COLOR_PRIMARY, fg="white",
                     relief="flat", activebackground=COLOR_SECONDARY, activeforeground="white", width=12, height=2)
-add_btn.grid(row=0, column=2, rowspan=3, padx=10, sticky="ns")
-
+add_btn.grid(row=0, column=2, rowspan=4, padx=10, sticky="ns") # 👈 Changed rowspan to 4
 # 🎯 ADDED ACTION CONTROL: Styled Delete Button Layout Tray
 delete_btn = tk.Button(form_frame, text="🗑️ Delete Lead", command=delete_company, font=font_button, bg=COLOR_DANGER,
                        fg="white", relief="flat", activebackground="#9B2C2C", activeforeground="white", width=12,

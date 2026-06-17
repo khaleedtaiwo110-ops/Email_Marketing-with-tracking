@@ -22,8 +22,8 @@ def run_campaign(contacts, update_ui, sender_email, password, status_callback=No
             pdf_path = None
 
         for index, c in enumerate(contacts):
-            # 🎯 FIX 1: Ignore anyone who has already been sent an email or moved forward
-            if c.get("status") in ["sent", "followup", "followup2", "completed"]:
+            # 🎯 Skip contacts who have already been processed or moved forward
+            if c.get("status") in ["sent", "followup", "followup2", "completed", "replied"]:
                 print(f"⏭️ Skipping {c['company']} (Status is already {c['status']})")
                 continue
 
@@ -31,38 +31,45 @@ def run_campaign(contacts, update_ui, sender_email, password, status_callback=No
             if status_callback:
                 status_callback(f"➡️ Processing row {index + 1}: {c['company']}")
 
-            subject = f"Streamlining Travel Logistics for {c['company']}"
+            subject = f"Optimizing {c['company']}'s corporate mobility / Project timeline protection"
 
-            # Generate and wrap content structure with PDF attachment capability
-            html = generate_email_html(c["company"], c["email"])
+            # Generate template and wrap content structure
+            html = generate_email_html(c["company"], c["email"], c.get("first_name"))
             msg = build_email(html, c["email"], attachment_path=pdf_path)
 
             # Execute delivery sequence
             sent = send_email(sender_email, password, c["email"], subject, msg)
             print("Email sent result:", sent)
 
-            # ---------------- DB UPDATE ---------------- #
+            # ---------------- 🛠️ FIXED DB UPDATE ---------------- #
             conn = get_connection()
             cursor = conn.cursor()
 
             status = "sent" if sent else "failed"
 
-            cursor.execute("""
-                UPDATE contacts 
-                SET status=?, sent_at=CASE WHEN ?='sent' THEN datetime('now') ELSE sent_at END
-                WHERE email=?
-            """, (status, status, c["email"]))
+            # Execute explicit targeted status write for the active lead!
+            cursor.execute(
+                "UPDATE contacts SET status = ?, sent_at = datetime('now') WHERE email = ?",
+                (status, c["email"])
+            )
 
             conn.commit()
             conn.close()
 
-            # ---------------- UI UPDATE ---------------- #
-            contacts[index]["status"] = status
+            # ---------------- MEMORY & UI UPDATE ---------------- #
+            from Email_Marketing import contacts_lock
+
+            with contacts_lock:
+                if index < len(contacts) and contacts[index]["email"] == c["email"]:
+                    contacts[index]["status"] = status
+
+            # Safe asynchronous update execution back to the Tkinter view loop
             update_ui(index, c, status)
 
             if status_callback:
                 status_callback(f"✅ Status updated for {c['company']} -> {status.upper()}")
 
+            # Polite anti-spam timing throttle interval
             time.sleep(random.randint(5, 10))
 
         if status_callback:
@@ -71,4 +78,4 @@ def run_campaign(contacts, update_ui, sender_email, password, status_callback=No
     except Exception as e:
         print(f"[FATAL ENGINE ERROR] {e}")
         if status_callback:
-            status_callback(f"❌ Critical Core Exception: {str(e)}")
+            status_callback(f"❌ Campaign halted due to fatal exception: {e}")

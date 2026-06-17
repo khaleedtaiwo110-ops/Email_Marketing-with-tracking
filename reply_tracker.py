@@ -4,7 +4,6 @@ import sqlite3
 
 from db import get_connection
 
-
 # ---------------- CHECK REPLIES ---------------- #
 def check_replies_and_update(contacts, contact_list, sender_email, password):
 
@@ -30,7 +29,15 @@ def check_replies_and_update(contacts, contact_list, sender_email, password):
             if "<" in sender and ">" in sender:
                 sender_email_clean = sender.split("<")[1].split(">")[0].strip()
 
-            for index, contact in enumerate(contacts):
+            # 🛠️ FIX #6: Import the global lock from your main application file
+            from Email_Marketing import contacts_lock
+
+            # Acquire the lock safely to generate a quick snapshot copy of the active contacts array
+            with contacts_lock:
+                safe_contacts_snapshot = list(contacts)
+
+            # Loop safely across your local snapshot copy instead of mutating the live array directly
+            for index, contact in enumerate(safe_contacts_snapshot):
 
                 if contact["email"].lower() != sender_email_clean:
                     continue
@@ -51,14 +58,17 @@ def check_replies_and_update(contacts, contact_list, sender_email, password):
                 conn.close()
 
                 # ---------------- MEMORY UPDATE ---------------- #
-                contacts[index]["status"] = "replied"
+                # Re-acquire lock safely to apply mutations to the real shared global dataset
+                with contacts_lock:
+                    if index < len(contacts) and contacts[index]["email"] == contact["email"]:
+                        contacts[index]["status"] = "replied"
 
                 # ---------------- UI UPDATE (SAFE) ---------------- #
-                def update_ui():
-                    contact_list.delete(index)
+                def update_ui(idx=index, c=contact):
+                    contact_list.delete(idx)
                     contact_list.insert(
-                        index,
-                        f"{contact['company']} | {contact['email']} | REPLIED ✅"
+                        idx,
+                        f"{c['company']} | {c['email']} | REPLIED ✅"
                     )
 
                 contact_list.after(0, update_ui)

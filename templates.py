@@ -5,7 +5,7 @@ from email.mime.application import MIMEApplication
 from email.mime.image import MIMEImage
 
 # Unified tracking URL route matching your server configuration
-TRACKING_DOMAIN = "https://email-marketing-with-tracking.onrender.com/track"
+TRACKING_DOMAIN = "https://email-marketing-with-tracking.onrender.com/open"
 LOGO_PATH = "Viewtrip_Logo.jpeg"
 
 
@@ -78,8 +78,14 @@ def build_email(html_content, email, attachment_path=None):
     return msg_outer
 
 
-# ---------------- INITIAL EMAIL ---------------- #
-def generate_email_html(company, email):
+# ---------------- NEW INITIAL EMAIL TEMPLATE ---------------- #
+def generate_email_html(company, email, first_name=None):
+    # Determine the perfect greeting phrase based on input availability
+    if first_name and first_name.strip():
+        greeting = f"Hi {first_name.strip()},"
+    else:
+        greeting = f"Hi Team at {company},"
+
     html = f"""
     <html>
     <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 10px;">
@@ -89,28 +95,24 @@ def generate_email_html(company, email):
             <img src="cid:logo" alt="Viewtrip Logo" style="max-height: 50px; max-width: 150px; object-fit: contain;">
         </div>
 
-        <p>Dear {company},</p>
+        <p>{greeting},</p>
 
-        <p>My name is Khaleed, and I represent Viewtrip Travels.</p>
+        <p>Managing cross-border projects, client consultations, and stakeholder meetings requires flawless execution—yet corporate mobility is often left exposed to external shocks.</p>
 
-        <p>Managing corporate travel is rarely just about booking a flight; it’s about what happens when things don't go as planned. Last-minute cancellations, sudden itinerary changes, and protocol delays can disrupt operations and impact your bottom line.</p>
+        <p>When sudden airline hub meltdowns, cancellations, or regional flight delays occur, the impact hits an organization’s bottom line immediately. It leads to wasted man-hours, disrupted corporate calendars, and expensive, last-minute rebooking costs.</p>
 
-        <p>We specialize in managing end-to-end travel logistics for corporate entities, ensuring that your team’s focus remains on core operations while we handle the complexities of global and domestic movement.</p>
+        <p>At Viewtrip Travels, we look at corporate travel management through a lens of risk mitigation and operational excellence.</p>
 
-        <p>Beyond standard bookings, we provide:</p>
+        <p><strong>How we protect your schedules:</strong></p>
         <ul style="list-style-type: none; padding-left: 20px;">
-            <li style="margin-bottom: 8px;"><strong>• Strategic Itinerary Planning:</strong> Optimizing routes to reduce travel time and cost.</li>
-            <li style="margin-bottom: 8px;"><strong>• End-to-End Visa Management:</strong> Specialized support for technical crews and executive teams.</li>
-            <li style="margin-bottom: 8px;"><strong>• 24/7 Priority Support:</strong> Real-time assistance for last-minute changes or flight disruptions.</li>
-            <li style="margin-bottom: 8px;"><strong>• Premium Hotel Procurement:</strong> Curated bookings with guaranteed Late Check-in and flexible cancellation policies—essential for shifting project timelines.</li>
-            <li style="margin-bottom: 8px;"><strong>• Seamless Ground Support:</strong> Secure, pre-vetted Airport Transfers and point-to-point ground transport, ensuring your team is never left waiting upon arrival.</li>
+            <li style="margin-bottom: 8px;"><strong>• Proactive Monitoring:</strong> We utilize real-time GDS tracking to actively monitor your team's flights.</li>
+            <li style="margin-bottom: 8px;"><strong>• Dynamic Rerouting:</strong> We dynamically reroute your personnel before they ever get caught in a terminal bottleneck.</li>
+            <li style="margin-bottom: 8px;"><strong>• Cost Control:</strong> We eliminate travel-induced project downtime while satisfying strict corporate duty-of-care protocols.</li>
         </ul>
 
-        <p>I’ve been following {company}’s growth in the industry sector and would welcome the opportunity to discuss how our tailored Travel solutions can drive efficiency for your upcoming 2026 travel calendar.</p>
+        <p>I’d love to learn how {company} currently manages its travel workflows for regional deployments and see if we can add a layer of operational resilience to your setup.</p>
 
-        <p><em>Please find our complete <strong>Corporate Review Brief</strong> attached to this email for your convenience.</em></p>
-
-        <p>Are you available for a brief introductory call?</p>
+        <p>Are you open to a brief, 10-minute introductory call next Tuesday or Thursday?</p>
 
         {footer()}
     </body>
@@ -119,7 +121,10 @@ def generate_email_html(company, email):
     return html
 
 
-def generate_followup_html(company, email):
+# ---------------- FOLLOW UP 1 ---------------- #
+def generate_followup_html(company, email, first_name=None):
+    greeting = f"Hi {first_name.strip()}" if first_name and first_name.strip() else f"Hi team at {company}"
+
     html = f"""
     <html>
     <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 10px;">
@@ -128,7 +133,7 @@ def generate_followup_html(company, email):
             <img src="cid:logo" alt="Viewtrip Logo" style="max-height: 50px; max-width: 150px; object-fit: contain;">
         </div>
 
-        <p>Hi team at {company},</p>
+        <p>{greeting},</p>
         <p>I wanted to follow up on my previous note regarding optimizing your 2026 travel configuration. I know operational schedules can be demanding.</p>
         <p>Many corporate teams we partner with tell us that handling <strong>Technical Crew Visa Management</strong> and arranging secure, pre-vetted <strong>Airport Transfers</strong> manually eats up hours of their internal operations time.</p>
         <p>Viewtrip Travels absorbs that friction entirely so your field executives and engineers can land and get straight to work without logistical delays.</p>
@@ -141,7 +146,10 @@ def generate_followup_html(company, email):
     return html
 
 
-def generate_followup2_html(company, email):
+# ---------------- FOLLOW UP 2 ---------------- #
+def generate_followup2_html(company, email, first_name=None):
+    greeting = f"Hi {first_name.strip()}" if first_name and first_name.strip() else "Hi team"
+
     html = f"""
     <html>
     <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 10px;">
@@ -150,7 +158,7 @@ def generate_followup2_html(company, email):
             <img src="cid:logo" alt="Viewtrip Logo" style="max-height: 50px; max-width: 150px; object-fit: contain;">
         </div>
 
-        <p>Hi team,</p>
+        <p>{greeting},</p>
         <p>Quick check-in regarding travel overhead at {company}.</p>
         <p>When project timelines shift unexpectedly, standard hotel bookings become a liability due to rigid cancellation penalties. Our logistics framework solves this by procuring custom business hotel accounts that guarantee <strong>Late Check-ins</strong> and highly flexible modification windows.</p>
         <p>I would be glad to share a quick 1-page summary of how we mitigate these specific travel Markups for logistics-focused operations.</p>
@@ -163,7 +171,10 @@ def generate_followup2_html(company, email):
     return html
 
 
-def generate_followup3_html(company, email):
+# ---------------- FOLLOW UP 3 ---------------- #
+def generate_followup3_html(company, email, first_name=None):
+    greeting = f"Hi {first_name.strip()}" if first_name and first_name.strip() else "Hi team"
+
     html = f"""
     <html>
     <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 10px;">
@@ -172,7 +183,7 @@ def generate_followup3_html(company, email):
             <img src="cid:logo" alt="Viewtrip Logo" style="max-height: 50px; max-width: 150px; object-fit: contain;">
         </div>
 
-        <p>Hi team,</p>
+        <p>{greeting},</p>
         <p>Closing the loop on this from my end. If streamlining your corporate logistics or protecting your 2026 travel budget from cancellation overhead isn't an active priority for {company} right now, I completely understand.</p>
         <p>If your travel requirements scale up or last-minute flight disruptions start creating issues later this year, you can reach out to us directly through this thread.</p>
         <p>Wishing your team a highly productive and successful quarter ahead.</p>

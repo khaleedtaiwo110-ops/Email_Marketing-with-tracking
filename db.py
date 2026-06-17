@@ -14,6 +14,7 @@ def init_db():
     CREATE TABLE IF NOT EXISTS contacts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         company TEXT,
+        first_name TEXT,
         email TEXT UNIQUE,
         website TEXT,
         status TEXT DEFAULT 'pending',
